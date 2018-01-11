@@ -35,7 +35,7 @@ pub struct OwnerMCS<S: Stream, K, F>(RefCell<Shared<S, K, F>>);
 impl<S, K, F> OwnerMCS<S, K, F>
     where S: Stream,
           K: Copy + Eq + Hash,
-          F: Fn(S::Item) -> (S::Item, K)
+          F: Fn(&S::Item) -> K
 {
     /// Create a new `OwnerMCS`, wrapping `stream`.
     ///
@@ -86,7 +86,7 @@ pub struct DefaultHandle<'owner, S: 'owner, K: 'owner, F: 'owner>(&'owner OwnerM
 impl<'owner, S, K, F> DefaultHandle<'owner, S, K, F>
     where S: Stream,
           K: Copy + Eq + Hash,
-          F: Fn(S::Item) -> (S::Item, K)
+          F: Fn(&S::Item) -> K
 {
     fn new(owner: &'owner OwnerMCS<S, K, F>) -> DefaultHandle<'owner, S, K, F> {
         DefaultHandle(owner)
@@ -120,7 +120,7 @@ impl<'owner, S, K, F> DefaultHandle<'owner, S, K, F>
 impl<'owner, S, K, F> Stream for DefaultHandle<'owner, S, K, F>
     where S: Stream,
           K: Copy + Eq + Hash,
-          F: Fn(S::Item) -> (S::Item, K)
+          F: Fn(&S::Item) -> K
 {
     type Item = S::Item;
     type Error = S::Error;
@@ -146,7 +146,7 @@ pub struct KeyHandle<'owner, S: 'owner, K: 'owner, F: 'owner>
 impl<'owner, S, K, F> KeyHandle<'owner, S, K, F>
     where S: Stream,
           K: Copy + Eq + Hash,
-          F: Fn(S::Item) -> (S::Item, K)
+          F: Fn(&S::Item) -> K
 {
     fn new(owner: &'owner OwnerMCS<S, K, F>, key: K) -> KeyHandle<'owner, S, K, F> {
         assert!(owner.0.borrow_mut().register_key(key),
@@ -191,7 +191,7 @@ impl<'owner, S, K, F> Drop for KeyHandle<'owner, S, K, F>
 impl<'owner, S, K, F> Stream for KeyHandle<'owner, S, K, F>
     where S: Stream,
           K: Copy + Eq + Hash,
-          F: Fn(S::Item) -> (S::Item, K)
+          F: Fn(&S::Item) -> K
 {
     type Item = S::Item;
     type Error = S::Error;
@@ -247,7 +247,7 @@ impl<S, K, F> Shared<S, K, F>
 impl<S, K, F> Shared<S, K, F>
     where S: Stream,
           K: Copy + Eq + Hash,
-          F: Fn(S::Item) -> (S::Item, K)
+          F: Fn(&S::Item) -> K
 {
     fn poll_default(&mut self) -> Poll<Option<S::Item>, S::Error> {
         match self.current.take() {
@@ -256,7 +256,7 @@ impl<S, K, F> Shared<S, K, F>
                 match self.inner.poll() {
                     Ok(Async::Ready(Some(item))) => {
                         // Got new item, buffer it and call poll_default again.
-                        let (item, key) = (self.key_fn)(item);
+                        let key = (self.key_fn)(&item);
                         self.current = Some((item, key));
                         return self.poll_default();
                     }
@@ -301,7 +301,7 @@ impl<S, K, F> Shared<S, K, F>
                 match self.inner.poll() {
                     Ok(Async::Ready(Some(item))) => {
                         // Got new item, buffer it and call poll_handle again.
-                        let (item, item_key) = (self.key_fn)(item);
+                        let item_key = (self.key_fn)(&item);
                         self.current = Some((item, item_key));
                         return self.poll_handle(key);
                     }
@@ -374,13 +374,10 @@ mod tests {
     fn success(buf_size: usize) -> bool {
         let (sender, receiver) = test_channel::<u8, Void, Void>(buf_size + 1);
 
-        let owner = OwnerMCS::new(receiver, |x| {
-            (x,
-             match x {
-                 y if y % 3 == 0 => 1,
-                 y if y % 5 == 0 => 2,
-                 _ => 0,
-             })
+        let owner = OwnerMCS::new(receiver, |x| match x {
+            y if y % 3 == 0 => 1,
+            y if y % 5 == 0 => 2,
+            _ => 0,
         });
 
         let default = owner.default_handle();
@@ -406,7 +403,7 @@ mod tests {
                                                        PollOp::Err(13),
                                                        PollOp::Delegate,
                                                        PollOp::Delegate]),
-                                  |x| (x, x));
+                                  |x| *x);
         let mut r1 = owner.key_handle(1);
         let mut r2 = owner.key_handle(2);
 
