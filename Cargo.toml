@@ -1,6 +1,6 @@
 [package]
 name = "multi-consumer-stream"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["AljoschaMeyer <mail@aljoscha-meyer.de>"]
 description = "Provides handles to streams, allowing multiple different tasks to read from the same underlying stream."
 repository = "https://github.com/AljoschaMeyer/multi-consumer-stream"
