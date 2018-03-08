@@ -8,5 +8,6 @@ readme = "README.md"
 license = "GPL-3.0"
 
 [dependencies]
+futures-core = "0.2.0-alpha"
 
 [dev-dependencies]
