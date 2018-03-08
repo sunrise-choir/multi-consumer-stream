@@ -1,6 +1,6 @@
 [package]
 name = "multi-consumer-stream"
-version = "0.3.0"
+version = "0.4.0"
 authors = ["AljoschaMeyer <mail@aljoscha-meyer.de>"]
 description = "Provides a handle to streams, allowing multiple different tasks to read from the same underlying stream."
 repository = "https://github.com/AljoschaMeyer/multi-consumer-stream"
@@ -8,11 +8,5 @@ readme = "README.md"
 license = "GPL-3.0"
 
 [dependencies]
-futures = "0.1.17"
-ordermap = "0.3.3"
 
 [dev-dependencies]
-quickcheck = "0.4.1"
-rand = "0.3.18"
-void = "1.0.2"
-atm-async-utils = "0.1.1"
