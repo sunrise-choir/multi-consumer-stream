@@ -7,23 +7,23 @@ use indexmap::IndexMap;
 use futures_core::{Stream, Poll, Async};
 use futures_core::task::{Waker, Context};
 
-pub struct Shared<S: Stream, K, ItemFn, ErrFn> {
-    inner: Option<S>, // TODO check whether this needs to be an option
+pub struct Shared<S: Stream, Key, ItemFn, ErrFn> {
+    pub inner: Option<S>,
     item_fn: ItemFn,
     err_fn: ErrFn,
     // The keys of all currently active handles.
-    active_keys: HashSet<K>,
-    current: Option<(Result<S::Item, S::Error>, K)>,
-    wakers: IndexMap<K, Waker>,
+    active_keys: HashSet<Key>,
+    current: Option<(Result<S::Item, S::Error>, Key)>,
+    wakers: IndexMap<Key, Waker>,
     default_waker: Option<Waker>,
     done: bool,
 }
 
-impl<S, K, ItemFn, ErrFn> Shared<S, K, ItemFn, ErrFn>
+impl<S, Key, ItemFn, ErrFn> Shared<S, Key, ItemFn, ErrFn>
     where S: Stream,
-          K: Eq + Hash
+          Key: Eq + Hash
 {
-    pub fn new(inner: S, item_fn: ItemFn, err_fn: ErrFn) -> Shared<S, K, ItemFn, ErrFn> {
+    pub fn new(inner: S, item_fn: ItemFn, err_fn: ErrFn) -> Shared<S, Key, ItemFn, ErrFn> {
         Shared {
             inner: Some(inner),
             item_fn,
@@ -36,11 +36,11 @@ impl<S, K, ItemFn, ErrFn> Shared<S, K, ItemFn, ErrFn>
         }
     }
 
-    fn register_key(&mut self, key: K) -> bool {
+    pub fn register_key(&mut self, key: Key) -> bool {
         self.active_keys.insert(key)
     }
 
-    fn deregister_key(&mut self, key: &K) {
+    pub fn deregister_key(&mut self, key: &Key) {
         self.wakers.remove(key);
         self.current
             .take()
@@ -54,13 +54,13 @@ impl<S, K, ItemFn, ErrFn> Shared<S, K, ItemFn, ErrFn>
     }
 }
 
-impl<S, K, ItemFn, ErrFn> Shared<S, K, ItemFn, ErrFn>
+impl<S, Key, ItemFn, ErrFn> Shared<S, Key, ItemFn, ErrFn>
     where S: Stream,
-          K: Copy + Eq + Hash,
-          ItemFn: Fn(&S::Item) -> K,
-          ErrFn: Fn(&S::Error) -> K
+          Key: Eq + Hash,
+          ItemFn: Fn(&S::Item) -> Key,
+          ErrFn: Fn(&S::Error) -> Key
 {
-    fn poll_default(&mut self, cx: &mut Context) -> Poll<Option<S::Item>, S::Error> {
+    pub fn poll_default(&mut self, cx: &mut Context) -> Poll<Option<S::Item>, S::Error> {
         if self.done {
             self.wake_next_handle();
             Ok(Async::Ready(None))
@@ -121,7 +121,7 @@ impl<S, K, ItemFn, ErrFn> Shared<S, K, ItemFn, ErrFn>
         }
     }
 
-    fn poll_handle(&mut self, key: K, cx: &mut Context) -> Poll<Option<S::Item>, S::Error> {
+    pub fn poll_handle(&mut self, key: Key, cx: &mut Context) -> Poll<Option<S::Item>, S::Error> {
         if self.done {
             self.wake_next_handle();
             Ok(Async::Ready(None))
@@ -172,12 +172,12 @@ impl<S, K, ItemFn, ErrFn> Shared<S, K, ItemFn, ErrFn>
                         }
                     } else {
                         // Not our key, store item, park and let another task handle it.
-                        self.wakers.insert(key, cx.waker());
-                        self.current = Some((result, buffered_key));
-
                         self.wakers
                             .remove(&buffered_key)
                             .map_or_else(|| self.wake_default(), |waker| waker.wake());
+
+                        self.wakers.insert(key, cx.waker());
+                        self.current = Some((result, buffered_key));
 
                         Ok(Async::Pending)
                     }
