@@ -13,3 +13,4 @@ indexmap = "0.4.1"
 
 [dev-dependencies]
 atm-async-utils = "0.2.0"
+futures = "0.2.0-alpha"

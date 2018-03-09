@@ -8,6 +8,8 @@ extern crate indexmap;
 
 #[cfg(test)]
 extern crate atm_async_utils;
+#[cfg(test)]
+extern crate futures;
 
 mod shared;
 pub mod sync;
