@@ -1,5 +1,5 @@
-//! TODO document
-#![warn(missing_docs)] // TODO turn this into deny
+//! Provides a multi-consumer-stream, that allows to route certain items of a wrapped stream to independent handles.
+#![deny(missing_docs)]
 
 // TODO AGPL
 
@@ -12,5 +12,7 @@ extern crate atm_async_utils;
 extern crate futures;
 
 mod shared;
-pub mod sync;
-pub mod unsync;
+// pub mod sync;
+mod unsync;
+
+pub use unsync::*;
