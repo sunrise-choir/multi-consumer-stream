@@ -1,8 +1,6 @@
 //! Provides a multi-consumer-stream, that allows to route certain items of a wrapped stream to independent handles.
 #![deny(missing_docs)]
 
-// TODO AGPL
-
 extern crate futures_core;
 extern crate indexmap;
 
