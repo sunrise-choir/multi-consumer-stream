@@ -3,9 +3,9 @@ name = "multi-consumer-stream"
 version = "0.4.0"
 authors = ["AljoschaMeyer <mail@aljoscha-meyer.de>"]
 description = "Provides a handle to streams, allowing multiple different tasks to read from the same underlying stream."
-repository = "https://github.com/AljoschaMeyer/multi-consumer-stream"
+repository = "https://github.com/sunrise-choir/multi-consumer-stream"
 readme = "README.md"
-license = "AGPL-3.0"
+license = "LGPL-3.0"
 
 [dependencies]
 futures-core = "0.2.0-alpha"
